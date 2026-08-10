@@ -258,22 +258,31 @@ func TestReplaceBinaryKeepsOriginalWhenRenameFails(t *testing.T) {
 
 	// Fail the move into place, and only that one: the move aside renames to
 	// dst+".old", and the rollback renames back to dst and must succeed.
-	real := renameFile
+	errBlocked := errors.New("rename blocked")
+	orig := renameFile
 	blocked := false
 
 	renameFile = func(from, to string) error {
 		if to == dst && !blocked {
 			blocked = true
-			return errors.New("rename blocked")
+			return errBlocked
 		}
 
-		return real(from, to)
+		return orig(from, to)
 	}
 
-	t.Cleanup(func() { renameFile = real })
+	t.Cleanup(func() { renameFile = orig })
 
-	if err := replaceBinary(dst, []byte("new")); err == nil {
-		t.Fatal("replaceBinary should report the failed rename")
+	err := replaceBinary(dst, []byte("new"))
+	// The sentinel proves the failure came from the move into place. Without it
+	// the test would also pass if replaceBinary failed earlier, before the
+	// rollback it exists to cover.
+	if !errors.Is(err, errBlocked) {
+		t.Fatalf("err = %v, want the blocked rename", err)
+	}
+
+	if !blocked {
+		t.Fatal("the move into place was never attempted")
 	}
 
 	got, err := os.ReadFile(dst) //nolint:gosec // dst is a temp path created in this test

@@ -7,7 +7,8 @@ package env
 import (
 	"context"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -85,14 +86,7 @@ func refreshFromServer(ctx context.Context, f *cmdutil.Factory, api envAPI, id s
 type envView map[string]string
 
 func (v envView) keys() []string {
-	keys := make([]string, 0, len(v))
-	for k := range v {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	return keys
+	return slices.Sorted(maps.Keys(v))
 }
 
 func (v envView) Headers() []string { return []string{"KEY", "VALUE"} }

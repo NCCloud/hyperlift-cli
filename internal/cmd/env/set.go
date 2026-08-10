@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -51,9 +52,7 @@ func runSet(ctx context.Context, f *cmdutil.Factory, id string, pairs []string) 
 		env = map[string]string{}
 	}
 
-	for k, v := range updates {
-		env[k] = v
-	}
+	maps.Copy(env, updates)
 
 	if err := api.EnvUpdate(ctx, id, env); err != nil {
 		return err

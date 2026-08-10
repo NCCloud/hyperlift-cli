@@ -103,8 +103,8 @@ func bestEffortExe(opts *updateOptions) (string, bool) {
 
 // runUpdate is the core of the command, which tests can call directly.
 func runUpdate(ctx context.Context, opts *updateOptions) error {
-	io := opts.IO
-	cs := io.ColorScheme()
+	ios := opts.IO
+	cs := ios.ColorScheme()
 
 	format := output.FormatTable
 	if opts.Output != nil {
@@ -117,15 +117,15 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 		_ = os.Remove(exe + ".old")
 	}
 
-	io.StartSpinner("Checking for updates")
+	ios.StartSpinner("Checking for updates")
 
 	rel, err := opts.releases.Latest(ctx)
 
-	io.StopSpinner()
+	ios.StopSpinner()
 
 	if err != nil {
 		if errors.Is(err, errNoReleases) {
-			return reportNoUpdate(io, format, opts.currentVersion, "", "There are no releases yet.")
+			return reportNoUpdate(ios, format, opts.currentVersion, "", "There are no releases yet.")
 		}
 
 		return fmt.Errorf("check for updates: %w", err)
@@ -137,7 +137,7 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 	}
 
 	if !isNewer(opts.currentVersion, latest) {
-		return reportNoUpdate(io, format, opts.currentVersion, latest,
+		return reportNoUpdate(ios, format, opts.currentVersion, latest,
 			fmt.Sprintf("You are already on the latest version (%s).", display(opts.currentVersion)))
 	}
 
@@ -145,7 +145,7 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 	// formats: a non-interactive surface reports, and the caller installs
 	// from a TTY.
 	if opts.checkOnly || format == output.FormatJSON || format == output.FormatQuiet {
-		return reportUpdateAvailable(io, format, opts.currentVersion, latest)
+		return reportUpdateAvailable(ios, format, opts.currentVersion, latest)
 	}
 
 	// Never overwrite an install a package manager owns: the manager would fight
@@ -156,17 +156,17 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 		}
 	}
 
-	_, _ = fmt.Fprintf(io.Out, "Updating %s -> %s\n", display(opts.currentVersion), cs.Cyan(latest))
+	_, _ = fmt.Fprintf(ios.Out, "Updating %s -> %s\n", display(opts.currentVersion), cs.Cyan(latest))
 
 	asset, ok := rel.AssetFor(runtime.GOOS, runtime.GOARCH)
 	if !ok {
 		return fmt.Errorf("no release asset for %s/%s in %s", runtime.GOOS, runtime.GOARCH, latest)
 	}
 
-	io.StartSpinner(fmt.Sprintf("Downloading %s", asset.Name))
+	ios.StartSpinner(fmt.Sprintf("Downloading %s", asset.Name))
 	archiveData, err := opts.releases.Download(ctx, asset)
 
-	io.StopSpinner()
+	ios.StopSpinner()
 
 	if err != nil {
 		return fmt.Errorf("download %s: %w", asset.Name, err)
@@ -177,29 +177,29 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 	// a SHA256SUMS read over TLS. install.sh, or a manual check, verifies the
 	// cosign signature on SHA256SUMS. That keeps a sigstore verifier out of the
 	// binary's dependency tree.
-	io.StartSpinner("Verifying checksum")
+	ios.StartSpinner("Verifying checksum")
 
 	sums, err := opts.releases.Checksums(ctx, rel)
 	if err != nil {
-		io.StopSpinner()
+		ios.StopSpinner()
 		return fmt.Errorf("download checksums: %w", err)
 	}
 
 	want, ok := sums[asset.Name]
 	if !ok {
-		io.StopSpinner()
+		ios.StopSpinner()
 		return fmt.Errorf("no checksum for %s in SHA256SUMS", asset.Name)
 	}
 
 	got := sha256Hex(archiveData)
 
-	io.StopSpinner()
+	ios.StopSpinner()
 
 	if !strings.EqualFold(got, want) {
 		return fmt.Errorf("checksum mismatch for %s: expected %s, got %s", asset.Name, want, got)
 	}
 
-	_, _ = fmt.Fprintln(io.Out, cs.Green("Checksum verified."))
+	_, _ = fmt.Fprintln(ios.Out, cs.Green("Checksum verified."))
 
 	binData, err := extractBinary(archiveData, asset.Name)
 	if err != nil {
@@ -220,7 +220,7 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 		return fmt.Errorf("replace %s: %w", exe, err)
 	}
 
-	_, _ = fmt.Fprintf(io.Out, "%s Installed %s\n", cs.Green("Updated."), cs.Cyan(latest))
+	_, _ = fmt.Fprintf(ios.Out, "%s Installed %s\n", cs.Green("Updated."), cs.Cyan(latest))
 
 	// Drop the cached "update available" notice, so the CLI does not report the
 	// version it just installed. This is best effort.
@@ -231,7 +231,7 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 		args := []string{exe, "version"}
 		if err := opts.reexec(exe, args); err != nil {
 			// A failed re-exec is not fatal: the binary is already updated.
-			_, _ = fmt.Fprintf(io.ErrOut, "%s re-exec failed (%v); restart hyperlift to use the new version.\n",
+			_, _ = fmt.Fprintf(ios.ErrOut, "%s re-exec failed (%v); restart hyperlift to use the new version.\n",
 				cs.Yellow("Warning:"), err)
 		}
 	}
@@ -240,10 +240,10 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 }
 
 // reportNoUpdate prints the "already current" or "no releases" result.
-func reportNoUpdate(io *iostreams.IOStreams, format, current, latest, msg string) error {
+func reportNoUpdate(ios *iostreams.IOStreams, format, current, latest, msg string) error {
 	switch format {
 	case output.FormatJSON:
-		return output.Render(io, checkResult{
+		return output.Render(ios, checkResult{
 			CurrentVersion:  display(current),
 			LatestVersion:   latest,
 			UpdateAvailable: false,
@@ -252,30 +252,30 @@ func reportNoUpdate(io *iostreams.IOStreams, format, current, latest, msg string
 		// Print nothing: there is no id and no action.
 		return nil
 	default:
-		_, _ = fmt.Fprintln(io.Out, msg)
+		_, _ = fmt.Fprintln(ios.Out, msg)
 		return nil
 	}
 }
 
 // reportUpdateAvailable prints the "newer version available" result.
-func reportUpdateAvailable(io *iostreams.IOStreams, format, current, latest string) error {
-	cs := io.ColorScheme()
+func reportUpdateAvailable(ios *iostreams.IOStreams, format, current, latest string) error {
+	cs := ios.ColorScheme()
 
 	switch format {
 	case output.FormatJSON:
-		return output.Render(io, checkResult{
+		return output.Render(ios, checkResult{
 			CurrentVersion:  display(current),
 			LatestVersion:   latest,
 			UpdateAvailable: true,
 		}, format)
 	case output.FormatQuiet:
-		_, _ = fmt.Fprintln(io.Out, latest)
+		_, _ = fmt.Fprintln(ios.Out, latest)
 		return nil
 	default:
-		_, _ = fmt.Fprintf(io.Out,
+		_, _ = fmt.Fprintf(ios.Out,
 			"A new version of hyperlift is available: %s -> %s\n",
 			display(current), cs.Cyan(latest))
-		_, _ = fmt.Fprintf(io.Out, "Run %s to install it.\n", cs.Bold("hyperlift update"))
+		_, _ = fmt.Fprintf(ios.Out, "Run %s to install it.\n", cs.Bold("hyperlift update"))
 
 		return nil
 	}
@@ -322,7 +322,7 @@ func managedInstallHint(exePath string) (hint string, managed bool) {
 		}
 	}
 
-	for _, elem := range strings.Split(slashed, "/") {
+	for elem := range strings.SplitSeq(slashed, "/") {
 		// Homebrew resolves an install into <prefix>/Cellar on every platform,
 		// including the Linuxbrew prefix /home/linuxbrew/.linuxbrew.
 		if strings.EqualFold(elem, "cellar") {

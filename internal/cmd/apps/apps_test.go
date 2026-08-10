@@ -52,9 +52,6 @@ func run(f *cmdutil.Factory, args ...string) (msg string, code int, err error) {
 	return msg, code, err
 }
 
-// ptr takes the address of a literal, for the contract's nullable fields.
-func ptr[T any](v T) *T { return &v }
-
 func sampleApp(id, status, build string) *client.Application {
 	now := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
@@ -63,11 +60,11 @@ func sampleApp(id, status, build string) *client.Application {
 		Status:      client.AppStatus(status),
 		BuildStatus: client.BuildStatus(build),
 		Plan:        "hyperlift_micro",
-		Domain:      ptr("demo.hyperlift.app"),
-		Scale:       ptr(1),
-		Branch:      ptr("main"),
+		Domain:      new("demo.hyperlift.app"),
+		Scale:       new(1),
+		Branch:      new("main"),
 		CreatedAt:   now,
-		UpdatedAt:   ptr(now),
+		UpdatedAt:   new(now),
 	}
 }
 

@@ -77,7 +77,7 @@ func NewCmdVersion(f *cmdutil.Factory) *cobra.Command {
 }
 
 func runVersion(f *cmdutil.Factory, verbose bool) error {
-	io := f.IOStreams
+	ios := f.IOStreams
 	format := f.Output()
 
 	i := info{Version: build.Version}
@@ -93,11 +93,11 @@ func runVersion(f *cmdutil.Factory, verbose bool) error {
 	// In the default table format without --verbose, print one clear headline
 	// instead of a FIELD/VALUE table with one row.
 	if format == output.FormatTable && !verbose {
-		cs := io.ColorScheme()
-		_, err := io.Out.Write([]byte("hyperlift version " + cs.Bold(i.Version) + "\n"))
+		cs := ios.ColorScheme()
+		_, err := ios.Out.Write([]byte("hyperlift version " + cs.Bold(i.Version) + "\n"))
 
 		return err
 	}
 
-	return output.Render(io, i, format)
+	return output.Render(ios, i, format)
 }

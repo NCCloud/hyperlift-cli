@@ -8,7 +8,7 @@
 # Run at each release and whenever the Hyperlift contract changes upstream
 # (see internal/testapi/testdata/README.md).
 #
-# Needs curl, python3 and PyYAML (pip install pyyaml).
+# Needs curl, shasum, python3 and PyYAML (pip install pyyaml).
 #
 # Usage: make refresh-spec
 

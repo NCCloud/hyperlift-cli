@@ -32,7 +32,7 @@ const (
 
 // intervalRe is the --interval shape the server enforces, checked client-side
 // for a clear error instead of a 422.
-var intervalRe = regexp.MustCompile(`^\d+(s|m|h|d)$`)
+var intervalRe = regexp.MustCompile(`^\d+[smhd]$`)
 
 type metricsOptions struct {
 	id       string
@@ -128,12 +128,12 @@ func runMetrics(ctx context.Context, f *cmdutil.Factory, opts *metricsOptions) e
 		Metrics:  opts.metrics,
 	}
 
-	io := f.IOStreams
-	io.StartSpinner("Fetching metrics")
+	ios := f.IOStreams
+	ios.StartSpinner("Fetching metrics")
 
 	m, err := api.Metrics(ctx, opts.id, q)
 
-	io.StopSpinner()
+	ios.StopSpinner()
 
 	if err != nil {
 		return err
@@ -143,5 +143,5 @@ func runMetrics(ctx context.Context, f *cmdutil.Factory, opts *metricsOptions) e
 		m = &client.Metrics{}
 	}
 
-	return output.Render(io, newView(m), f.Output())
+	return output.Render(ios, newView(m), f.Output())
 }

@@ -8,9 +8,10 @@ package testapi
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,9 +19,6 @@ import (
 
 	"github.com/nccloud/hyperlift-cli/internal/client"
 )
-
-// ptr takes the address of a literal, for the contract's nullable fields.
-func ptr[T any](v T) *T { return &v }
 
 // SeedApps returns the mock's two sample applications in the contract shape.
 // Tests assert against these values instead of repeating literals.
@@ -33,15 +31,15 @@ func SeedApps() map[string]*client.Application {
 			Status:                   client.StatusRunning,
 			BuildStatus:              client.BuildStatusBuilt,
 			Plan:                     "hyperlift_micro",
-			Domain:                   ptr("demo.hyperlift.app"),
-			Scale:                    ptr(1),
-			Branch:                   ptr("main"),
-			GithubInstallationID:     ptr[int64](12345678),
-			GithubRepositoryFullName: ptr("acme/web"),
-			DockerfilePath:           ptr("Dockerfile"),
-			AutomaticBuildEnabled:    ptr(true),
+			Domain:                   new("demo.hyperlift.app"),
+			Scale:                    new(1),
+			Branch:                   new("main"),
+			GithubInstallationID:     new(int64(12345678)),
+			GithubRepositoryFullName: new("acme/web"),
+			DockerfilePath:           new("Dockerfile"),
+			AutomaticBuildEnabled:    new(true),
 			CreatedAt:                now,
-			UpdatedAt:                ptr(now.Add(time.Hour)),
+			UpdatedAt:                new(now.Add(time.Hour)),
 		},
 		"app_d4e5f6": {
 			ID:                       "app_d4e5f6",
@@ -49,14 +47,14 @@ func SeedApps() map[string]*client.Application {
 			BuildStatus:              client.BuildStatusNone,
 			Plan:                     "hyperlift_large",
 			Domain:                   nil, // renders as "domain": null
-			Scale:                    ptr(0),
-			Branch:                   ptr("develop"),
-			GithubInstallationID:     ptr[int64](67890),
-			GithubRepositoryFullName: ptr("acme/api"),
-			DockerfilePath:           ptr("docker/Dockerfile"),
-			AutomaticBuildEnabled:    ptr(false),
+			Scale:                    new(0),
+			Branch:                   new("develop"),
+			GithubInstallationID:     new(int64(67890)),
+			GithubRepositoryFullName: new("acme/api"),
+			DockerfilePath:           new("docker/Dockerfile"),
+			AutomaticBuildEnabled:    new(false),
 			CreatedAt:                now.Add(-48 * time.Hour),
-			UpdatedAt:                ptr(now.Add(-time.Hour)),
+			UpdatedAt:                new(now.Add(-time.Hour)),
 		},
 	}
 }
@@ -242,12 +240,7 @@ func (s *mockServer) list(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	ids := make([]string, 0, len(s.apps))
-	for id := range s.apps {
-		ids = append(ids, id)
-	}
-
-	sort.Strings(ids)
+	ids := slices.Sorted(maps.Keys(s.apps))
 
 	total := len(ids)
 	lo := min(skip, total)
@@ -313,7 +306,7 @@ func (s *mockServer) scale(w http.ResponseWriter, r *http.Request, id string) {
 
 	app, ok := s.apps[id]
 	if ok {
-		app.Scale = ptr(body.Scale)
+		app.Scale = new(body.Scale)
 		settle := time.Now().Add(asyncSettleDelay)
 
 		if body.Scale == 1 {

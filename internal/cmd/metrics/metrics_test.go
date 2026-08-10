@@ -48,8 +48,6 @@ func run(t *testing.T, f *cmdutil.Factory, args ...string) (msg string, code int
 	return cmdutil.FriendlyError(err, false)
 }
 
-func fptr(f float64) *float64 { return &f }
-
 // staticMetrics returns a Fake whose Metrics call always answers with m.
 func staticMetrics(m *client.Metrics) *clienttest.Fake {
 	return &clienttest.Fake{
@@ -73,7 +71,7 @@ func sampleMetrics() *client.Metrics {
 			{
 				Name:  "memoryUsageBytes",
 				Unit:  "furlongsPerFortnight", // an unknown future unit must pass through untouched
-				Quota: fptr(512),
+				Quota: new(float64(512)),
 				Samples: []client.MetricSample{
 					{Timestamp: "2026-06-01T12:00:00Z", Value: 128},
 					{Timestamp: "2026-06-01T12:05:00Z", Value: 156},
@@ -324,7 +322,7 @@ func TestMetrics_HumanizedTableWithQuota(t *testing.T) {
 			{
 				Name:  "memoryUsageBytes",
 				Unit:  "bytes",
-				Quota: fptr(1073741824),
+				Quota: new(float64(1073741824)),
 				Samples: []client.MetricSample{
 					{Timestamp: "2026-06-01T12:00:00.000Z", Value: 536870912},
 				},
