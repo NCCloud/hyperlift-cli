@@ -29,7 +29,9 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: go.mod
+          # Newest 1.26 patch, not go.mod's minimum. See lint.yaml.
+          go-version: '1.26.x'
+          check-latest: true
 
       # go build/test are OS-agnostic; the same commands run on Linux, macOS and
       # Windows runners (the default shell differs per-OS but these need no shell

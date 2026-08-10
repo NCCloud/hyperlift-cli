@@ -67,7 +67,7 @@ cd hyperlift-cli
 make install   # installs into $(go env GOPATH)/bin
 ```
 
-Requires Go 1.25+.
+Requires Go 1.26+.
 
 ### Verifying a download (optional)
 

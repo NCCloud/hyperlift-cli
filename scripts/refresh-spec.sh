@@ -8,6 +8,8 @@
 # Run at each release and whenever the Hyperlift contract changes upstream
 # (see internal/testapi/testdata/README.md).
 #
+# Needs curl, python3 and PyYAML (pip install pyyaml).
+#
 # Usage: make refresh-spec
 
 set -eu
@@ -23,7 +25,12 @@ trap 'rm -f "$page"' EXIT
 curl -fsSL "$URL" -o "$page"
 
 python3 - "$page" "$PIN" <<'PY'
-import json, sys, yaml
+import json, sys
+
+try:
+    import yaml
+except ImportError:
+    sys.exit("error: this script needs PyYAML; install it with: pip install pyyaml")
 
 html = open(sys.argv[1], encoding="utf-8").read()
 marker = "const __redoc_state = "
@@ -61,4 +68,4 @@ sed -i.bak \
   "$DOC" && rm -f "${DOC}.bak"
 
 echo "Pinned. sha256 ${sum} (README updated)." >&2
-echo "Now run: GOTOOLCHAIN=go1.25.0 go test ./internal/testapi/" >&2
+echo "Now run: go test ./internal/testapi/" >&2

@@ -4,7 +4,7 @@ Thanks for your interest in improving the `hyperlift` CLI.
 
 ## Prerequisites
 
-- Go 1.25+
+- Go 1.26+
 - `make`
 - [`golangci-lint`](https://golangci-lint.run/) v2 (for `make lint`)
 
@@ -14,13 +14,6 @@ Thanks for your interest in improving the `hyperlift` CLI.
 make build      # build ./bin/hyperlift with version ldflags
 make test       # go test -race -cover ./... (same flags as CI)
 make lint       # golangci-lint run ./...
-```
-
-If `golangci-lint` crashes with your local Go toolchain, pin the toolchain that
-it runs under:
-
-```sh
-GOTOOLCHAIN=go1.25.0 golangci-lint run ./...
 ```
 
 ## The contract pin
@@ -34,9 +27,9 @@ contract changes, refresh the pin:
 make refresh-spec   # re-extracts the spec from the published docs
 ```
 
-Then update the `Retrieved` date and checksum in
-`internal/testapi/testdata/README.md` and confirm the contract tests stay
-green: `go test ./internal/testapi/`.
+That rewrites the pin and its provenance (the `Retrieved` date and the
+checksum) in `internal/testapi/testdata/README.md`. Then confirm the contract
+tests stay green: `go test ./internal/testapi/`.
 
 ## Running against the mock API
 
