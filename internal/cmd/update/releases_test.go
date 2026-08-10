@@ -243,14 +243,12 @@ func TestReplaceBinary(t *testing.T) {
 	}
 }
 
-// TestReplaceBinaryRestoresOnFailure proves the Windows path puts the old
-// binary back when the second rename fails. Without the rollback, the user is
-// left with no executable at all.
-func TestReplaceBinaryRestoresOnFailure(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.Skip("the move-aside step only runs on Windows")
-	}
-
+// TestReplaceBinaryKeepsOriginalWhenRenameFails proves a failed move into place
+// leaves the user with a working binary. On Windows that needs the rollback,
+// because the original has already moved aside by then; elsewhere the original
+// is simply never touched. One assertion covers both, so the Windows-only
+// rollback is exercised in CI without a Windows-only test.
+func TestReplaceBinaryKeepsOriginalWhenRenameFails(t *testing.T) {
 	dir := t.TempDir()
 
 	dst := filepath.Join(dir, "hyperlift")
@@ -258,18 +256,26 @@ func TestReplaceBinaryRestoresOnFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// A directory at the destination makes the rename into place fail after
-	// the original has already been moved aside.
-	blocker := filepath.Join(dir, "hyperlift.blocked")
-	if err := os.Mkdir(blocker, 0o750); err != nil {
-		t.Fatal(err)
+	// Fail the move into place, and only that one: the move aside renames to
+	// dst+".old", and the rollback renames back to dst and must succeed.
+	real := renameFile
+	blocked := false
+
+	renameFile = func(from, to string) error {
+		if to == dst && !blocked {
+			blocked = true
+			return errors.New("rename blocked")
+		}
+
+		return real(from, to)
 	}
 
-	if err := replaceBinary(blocker, []byte("new")); err == nil {
-		t.Fatal("replaceBinary should fail when the destination is a directory")
+	t.Cleanup(func() { renameFile = real })
+
+	if err := replaceBinary(dst, []byte("new")); err == nil {
+		t.Fatal("replaceBinary should report the failed rename")
 	}
 
-	// The original binary must still be readable at its own path.
 	got, err := os.ReadFile(dst) //nolint:gosec // dst is a temp path created in this test
 	if err != nil {
 		t.Fatalf("original binary is gone: %v", err)

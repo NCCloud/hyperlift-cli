@@ -337,6 +337,10 @@ func managedInstallHint(exePath string) (hint string, managed bool) {
 	return "", false
 }
 
+// renameFile is os.Rename. A test replaces it to fail the move into place,
+// which is the only way to reach the rollback below.
+var renameFile = os.Rename
+
 // replaceBinary replaces the file at dst with newBin atomically. It writes a
 // temp file in the same directory, so the rename stays on one filesystem, makes
 // it executable, then renames it over dst. Windows cannot overwrite a running
@@ -380,17 +384,17 @@ func replaceBinary(dst string, newBin []byte) error {
 		old := dst + ".old"
 
 		_ = os.Remove(old)
-		if err := os.Rename(dst, old); err != nil {
+		if err := renameFile(dst, old); err != nil {
 			return fmt.Errorf("move running executable aside: %w", err)
 		}
 
 		movedAside = old
 	}
 
-	if err := os.Rename(tmpName, dst); err != nil {
+	if err := renameFile(tmpName, dst); err != nil {
 		// Put the old binary back, or the user is left with no CLI at all.
 		if movedAside != "" {
-			_ = os.Rename(movedAside, dst)
+			_ = renameFile(movedAside, dst)
 		}
 
 		return fmt.Errorf("rename into place: %w", err)

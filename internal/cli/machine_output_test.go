@@ -15,10 +15,10 @@ import (
 	"github.com/nccloud/hyperlift-cli/internal/testapi"
 )
 
-// TestJSONKeysAreCamelCase runs every JSON-emitting command against the contract
-// mock through the real client, the only test that covers the full wiring across
-// the command surface. The camelCase walk holds the README "Machine output"
-// promise. `update` is excluded; its shape is pinned in internal/cmd/update.
+// TestJSONKeysAreCamelCase drives every JSON-emitting command against the
+// contract mock through the real client, then walks the output for a key that
+// is not camelCase. That holds the README's "Machine output" promise.
+// `update` is excluded; internal/cmd/update pins its shape.
 func TestJSONKeysAreCamelCase(t *testing.T) {
 	zk.MockInit()
 
