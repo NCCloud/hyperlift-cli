@@ -1,0 +1,53 @@
+name: release
+
+# Runs when a GitHub Release is published. GoReleaser then builds the cross
+# platform matrix, writes SHA256SUMS, keyless-signs it with cosign (OIDC), and
+# uploads every asset to that release.
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  # contents: write  — GoReleaser uploads archives/checksums/signatures to the release.
+  # id-token: write  — cosign keyless signing mints a short-lived cert from the
+  #                    GitHub OIDC token (no long-lived signing key needed).
+  contents: write
+  id-token: write
+
+# One release run per tag; a rerun cancels a stuck predecessor.
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: true
+
+jobs:
+  goreleaser:
+    name: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # GoReleaser needs full history + tags to compute the changelog.
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      # Provides the `cosign` binary (v3+, bundle format) used by the `signs:`
+      # block in .goreleaser.yaml.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          # Pinned for reproducible releases; bump deliberately.
+          version: "v2.17.1"
+          args: release --clean
+        env:
+          # GITHUB_TOKEN uploads release assets (archives/checksums/signatures)
+          # to THIS repo's release. Always present in Actions.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

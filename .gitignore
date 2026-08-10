@@ -1,0 +1,17 @@
+# Build output
+/bin/
+/dist/
+
+# Test / coverage artifacts
+*.out
+coverage.txt
+
+# Editor / OS cruft
+.idea/
+.vscode/
+.DS_Store
+
+# Local environment overrides
+*.env
+.env.local
+

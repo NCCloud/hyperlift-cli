@@ -1,0 +1,115 @@
+# GoReleaser configuration for the hyperlift CLI.
+# Schema: GoReleaser v2 (https://goreleaser.com).
+#
+# Nothing here is published from this repo — this is the contract the release
+# workflow (.github/workflows/release.yaml) runs on a published GitHub Release.
+#
+# IMPORTANT — these names are a contract the CLI itself relies on:
+#   * The checksum asset MUST be named SHA256SUMS. The built-in self-updater
+#     (internal/cmd/update) downloads an asset literally called "SHA256SUMS" and
+#     the install script (scripts/install.sh) does the same.
+#   * Each archive name MUST embed the GOOS and GOARCH as standalone tokens
+#     delimited by "_" (e.g. hyperlift_darwin_arm64.tar.gz). The updater's
+#     AssetFor() matcher locates the right asset by those os/arch tokens and
+#     skips SHA256SUMS / *.sigstore.json.
+# Do not rename these without updating internal/cmd/update and scripts/install.sh.
+
+version: 2
+
+project_name: hyperlift
+
+builds:
+  - main: ./cmd/hyperlift
+    binary: hyperlift
+    env:
+      - CGO_ENABLED=0
+    # Reproducible builds: pin the binary mtime to the commit timestamp.
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/nccloud/hyperlift-cli/internal/build.Version={{.Version}}
+      - -X github.com/nccloud/hyperlift-cli/internal/build.Commit={{.Commit}}
+      # CommitDate, not Date: a rerun of the same tag must produce identical
+      # bytes, or the checksums change between runs.
+      - -X github.com/nccloud/hyperlift-cli/internal/build.Date={{.CommitDate}}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # Windows on arm64 is not part of the support matrix.
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - # Produces: hyperlift_<os>_<arch>.<ext> — os/arch are standalone "_" tokens
+    # so the self-updater and install.sh can locate the asset by GOOS/GOARCH.
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    # Windows users get a .zip instead of a tarball.
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  # Must stay "SHA256SUMS" — see the contract note at the top of this file.
+  name_template: "SHA256SUMS"
+
+# Keyless signing of the checksum file with cosign v3+ (Sigstore OIDC).
+#
+# This runs in CI under the release workflow, which grants `id-token: write`
+# so cosign can mint a short-lived certificate from the GitHub OIDC token —
+# no long-lived signing keys or secrets required. It emits one extra release
+# asset: SHA256SUMS.sigstore.json (the verification bundle). Verify with:
+#   cosign verify-blob \
+#     --bundle SHA256SUMS.sigstore.json \
+#     --certificate-identity-regexp 'https://github.com/nccloud/hyperlift-cli/.github/workflows/release.yaml@.*' \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+#     SHA256SUMS
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
+
+release:
+  github:
+    owner: nccloud
+    name: hyperlift-cli
+  # The workflow triggers on an already-published release, so don't flip drafts.
+  draft: false
+  prerelease: auto
+  # A rerun after a partial upload must overwrite, not fail on duplicates.
+  replace_existing_artifacts: true
+  # The workflow runs after the release is published, so a body already exists
+  # and the default "keep-existing" would discard the generated notes below.
+  mode: replace
+
+# The repo ships no CHANGELOG.md, so these commit subjects ARE the release
+# notes. Keep merge titles in the conventional form, or the notes read badly.
+changelog:
+  use: github
+  sort: asc
+  # Without this every entry carries the full 40-character SHA.
+  abbrev: 7
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"
