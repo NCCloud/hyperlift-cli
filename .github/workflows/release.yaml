@@ -53,3 +53,7 @@ jobs:
           # GITHUB_TOKEN uploads release assets (archives/checksums/signatures)
           # to THIS repo's release. Always present in Actions.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GH_PAT commits the cask and the scoop manifest to their repos,
+          # which GITHUB_TOKEN cannot reach. Until the secret exists,
+          # publishing skips itself (skip_upload in .goreleaser.yaml).
+          GH_PAT: ${{ secrets.GH_PAT }}

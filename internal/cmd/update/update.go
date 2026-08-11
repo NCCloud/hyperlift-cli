@@ -335,9 +335,9 @@ func managedInstallHint(exePath string) (hint string, managed bool) {
 	}
 
 	for elem := range strings.SplitSeq(slashed, "/") {
-		// Homebrew resolves an install into <prefix>/Cellar on every platform,
-		// including the Linuxbrew prefix /home/linuxbrew/.linuxbrew.
-		if strings.EqualFold(elem, "cellar") {
+		// Formulae land under <prefix>/Cellar, casks under <prefix>/Caskroom.
+		// Intel macOS prefixes /usr/local, which the /opt/homebrew check misses.
+		if strings.EqualFold(elem, "cellar") || strings.EqualFold(elem, "caskroom") {
 			return "brew upgrade hyperlift", true
 		}
 

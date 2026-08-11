@@ -60,8 +60,44 @@ archives:
       - README.md
       - LICENSE
 
+homebrew_casks:
+  - name: hyperlift
+    repository:
+      owner: NCCloud
+      name: homebrew-tap
+      # Writes the cask commit. `index` tolerates an unset GH_PAT, so a
+      # local snapshot still works.
+      token: '{{ index .Env "GH_PAT" }}'
+    homepage: "https://github.com/NCCloud/hyperlift-cli"
+    description: "Manage Hyperlift container applications from the command line"
+    # Without GH_PAT the tap commit is skipped and the release still succeeds;
+    # the generated cask file stays in the runner's dist/ output. With a token,
+    # `auto` publishes releases but skips pre-release tags like v1.2.0-rc.1.
+    skip_upload: '{{ if index .Env "GH_PAT" }}auto{{ else }}true{{ end }}'
+    # Binaries are rejected without valid
+    # Apple certificates. GoReleaser's cask docs prescribe this hook for that
+    # case; drop it when signing ever lands. Documented at:
+    # https://github.com/goreleaser/goreleaser/blob/v2.17.1/www/content/customization/publish/homebrew_casks.md#signing-and-notarizing
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/hyperlift"]
+          end
+
+scoops:
+  - name: hyperlift
+    repository:
+      owner: NCCloud
+      name: scoop-bucket
+      # Same GH_PAT and reasoning as the cask block above.
+      token: '{{ index .Env "GH_PAT" }}'
+    homepage: "https://github.com/NCCloud/hyperlift-cli"
+    description: "Manage Hyperlift container applications from the command line"
+    license: "Apache-2.0"
+    skip_upload: '{{ if index .Env "GH_PAT" }}auto{{ else }}true{{ end }}'
+
 checksum:
-  # Must stay "SHA256SUMS" — see the contract note at the top of this file.
   name_template: "SHA256SUMS"
 
 # Keyless signing of the checksum file with cosign v3+ (Sigstore OIDC).

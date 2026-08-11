@@ -419,6 +419,7 @@ func TestManagedInstallHint(t *testing.T) {
 		{"/opt/homebrew/Cellar/hyperlift/1.2.3/bin/hyperlift", "brew upgrade hyperlift"},
 		{"/opt/homebrew/bin/hyperlift", "brew upgrade hyperlift"},
 		{"/usr/local/Cellar/hyperlift/1.2.3/bin/hyperlift", "brew upgrade hyperlift"},
+		{"/usr/local/Caskroom/hyperlift/1.2.3/hyperlift", "brew upgrade hyperlift"}, // cask; Intel-Mac brew prefix
 		{"/home/linuxbrew/.linuxbrew/Cellar/hyperlift/1.2.3/bin/hyperlift", "brew upgrade hyperlift"},
 		{`C:\Users\me\scoop\apps\hyperlift\current\hyperlift.exe`, "scoop update hyperlift"},
 		{`C:\Users\me\Scoop\shims\hyperlift.exe`, "scoop update hyperlift"},

@@ -27,6 +27,19 @@ Every command carries its own reference: run `hyperlift <command> --help`.
 
 ## 📦 Installation
 
+### Homebrew (macOS)
+
+```sh
+brew install nccloud/tap/hyperlift
+```
+
+### Scoop (Windows)
+
+```powershell
+scoop bucket add nccloud https://github.com/NCCloud/scoop-bucket
+scoop install hyperlift
+```
+
 ### Install script (Linux & macOS)
 
 ```sh
@@ -43,20 +56,14 @@ HYPERLIFT_VERSION=v1.2.3 HYPERLIFT_INSTALL="$HOME/.local/bin" \
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/NCCloud/hyperlift-cli/main/scripts/install.sh)"
 ```
 
-### Windows
-
-Download `hyperlift_windows_amd64.zip` from the
-[Releases page](https://github.com/NCCloud/hyperlift-cli/releases), extract it,
-and put `hyperlift.exe` in a folder on your `PATH`.
-
-You only do this once. `hyperlift update` replaces the binary in place after
-that.
-
 ### Manual download
 
 Take the archive for your platform from the
 [Releases page](https://github.com/NCCloud/hyperlift-cli/releases), extract it,
-and move the `hyperlift` binary onto your `PATH`.
+and move the `hyperlift` binary onto your `PATH`. On Windows that means
+`hyperlift_windows_amd64.zip`, and `hyperlift.exe` goes into a folder on your
+`PATH`. You only do this once: `hyperlift update` replaces the binary in place
+afterwards.
 
 ### From source
 
