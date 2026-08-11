@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -466,5 +467,50 @@ func TestRunUpdate_NoAssetForPlatform(t *testing.T) {
 	err := runUpdate(context.Background(), opts)
 	if err == nil || !strings.Contains(err.Error(), "no release asset") {
 		t.Fatalf("want 'no release asset' error, got %v", err)
+	}
+}
+
+// TestRunUpdate_UnwritableInstallDir proves the preflight fails before any
+// download when the binary's directory cannot be written, the exact state a
+// sudo install of install.sh leaves behind.
+func TestRunUpdate_UnwritableInstallDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("0o555 does not deny writes on Windows")
+	}
+
+	dir := t.TempDir()
+
+	exe := filepath.Join(dir, "hyperlift")
+	if err := writeFile(exe, []byte("old")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chmod(dir, 0o555); err != nil { //nolint:gosec // read-only test dir, not a data file
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) }) //nolint:gosec // restore the test dir
+
+	io, _, _, _ := iostreams.Test()
+	src := &fakeReleases{
+		latest: release{TagName: "v2.0.0", Assets: []releaseAsset{
+			{Name: "hyperlift_" + runtime.GOOS + "_" + runtime.GOARCH + ".tar.gz", URL: "https://example/a"},
+			{Name: checksumsFilename, URL: "https://example/SHA256SUMS"},
+		}},
+		dlErr: errors.New("the preflight must fail before any download"),
+	}
+	opts := &updateOptions{
+		IO:             io,
+		Output:         func() string { return output.FormatTable },
+		releases:       src,
+		currentVersion: "1.0.0",
+		executable:     func() (string, error) { return exe, nil },
+		replace:        func(string, []byte) error { return errors.New("must not be reached") },
+		reexec:         func(string, []string) error { return nil },
+	}
+
+	err := runUpdate(context.Background(), opts)
+	if err == nil || !strings.Contains(err.Error(), "sudo hyperlift update") {
+		t.Fatalf("want the sudo hint, got %v", err)
 	}
 }

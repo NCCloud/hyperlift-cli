@@ -215,3 +215,34 @@ func (r *recordingReleases) Checksums(ctx context.Context, rel release) (map[str
 	*r.hit = true
 	return r.inner.Checksums(ctx, rel)
 }
+
+// TestPrintNag_MajorGapWarns pins the two notice shapes: a minor gap stays the
+// friendly one-liner, a major gap adds the red compatibility warning.
+func TestPrintNag_MajorGapWarns(t *testing.T) {
+	cases := []struct {
+		name, current, latest string
+		wantWarning           bool
+	}{
+		{"minor gap", "1.0.0", "v1.2.0", false},
+		{"major gap", "1.2.3", "v2.0.0", true},
+		{"two majors", "0.9.0", "v2.0.0", true},
+		{"dev build never warns", "dev", "v9.0.0", false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			io, _, _, errOut := iostreams.Test()
+			printNag(NotifyConfig{IO: io, currentVersion: c.current}, c.latest)
+
+			got := errOut.String()
+			if !strings.Contains(got, "hyperlift update") {
+				t.Fatalf("notice lost the update hint: %q", got)
+			}
+
+			warned := strings.Contains(got, "highly recommended")
+			if warned != c.wantWarning {
+				t.Fatalf("warning shown = %v, want %v; output %q", warned, c.wantWarning, got)
+			}
+		})
+	}
+}

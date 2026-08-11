@@ -163,6 +163,18 @@ func runUpdate(ctx context.Context, opts *updateOptions) error {
 		return fmt.Errorf("no release asset for %s/%s in %s", runtime.GOOS, runtime.GOARCH, latest)
 	}
 
+	// The replace writes a temp file next to the binary, so a root-owned
+	// install directory (the install script's default) fails. Check first.
+	if exe, ok := bestEffortExe(opts); ok {
+		if err := writableDir(filepath.Dir(exe)); err != nil {
+			if runtime.GOOS == "windows" {
+				return fmt.Errorf("updating needs write permission to %s; re-run `hyperlift update` from an administrator terminal", filepath.Dir(exe))
+			}
+
+			return fmt.Errorf("updating needs write permission to %s; re-run as: `sudo hyperlift update`", filepath.Dir(exe))
+		}
+	}
+
 	ios.StartSpinner(fmt.Sprintf("Downloading %s", asset.Name))
 	archiveData, err := opts.releases.Download(ctx, asset)
 
@@ -340,6 +352,20 @@ func managedInstallHint(exePath string) (hint string, managed bool) {
 // renameFile is os.Rename. A test replaces it to fail the move into place,
 // which is the only way to reach the rollback below.
 var renameFile = os.Rename
+
+// writableDir reports whether the process can create a file in dir, by doing
+// it. A probe beats os.Stat modes, which say nothing under Windows ACLs.
+func writableDir(dir string) error {
+	probe, err := os.CreateTemp(dir, ".hyperlift-preflight-*")
+	if err != nil {
+		return err
+	}
+
+	name := probe.Name()
+	_ = probe.Close()
+
+	return os.Remove(name)
+}
 
 // replaceBinary replaces the file at dst with newBin atomically. It writes a
 // temp file in the same directory, so the rename stays on one filesystem, makes

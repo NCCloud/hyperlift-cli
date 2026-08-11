@@ -116,9 +116,23 @@ func checkForUpdate(ctx context.Context, cfg NotifyConfig) {
 	_ = writeCache(cachePath, updateCache{CheckedAt: cfg.now(), LatestVersion: rel.Version()})
 }
 
-// printNag writes the one-line "new release available" notice to stderr.
+// printNag writes the one-line "new release available" notice to stderr. A
+// major-version gap turns it into a red warning: the API contract may have
+// moved under this binary.
 func printNag(cfg NotifyConfig, latest string) {
 	cs := cfg.IO.ColorScheme()
+
+	if majorBehind(cfg.currentVersion, latest) {
+		_, _ = fmt.Fprintf(cfg.IO.ErrOut,
+			"\n%s A new major release of hyperlift is available: %s -> %s\n",
+			cs.Red("!"), display(cfg.currentVersion), cs.Cyan(latest))
+		_, _ = fmt.Fprintf(cfg.IO.ErrOut,
+			"  %s\n", cs.Red("Updating is highly recommended: this version may no longer work correctly."))
+		_, _ = fmt.Fprintf(cfg.IO.ErrOut, "  Run %s to update.\n\n", cs.Bold("hyperlift update"))
+
+		return
+	}
+
 	_, _ = fmt.Fprintf(cfg.IO.ErrOut,
 		"\n%s A new release of hyperlift is available: %s -> %s\n",
 		cs.Yellow("!"), display(cfg.currentVersion), cs.Cyan(latest))

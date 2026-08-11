@@ -2,7 +2,7 @@
 # install.sh — download and install the hyperlift CLI from GitHub Releases.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/nccloud/hyperlift-cli/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/NCCloud/hyperlift-cli/main/scripts/install.sh | sh
 #
 # Environment overrides:
 #   HYPERLIFT_VERSION   tag to install (e.g. v1.2.3). Default: latest release.
@@ -15,7 +15,7 @@
 
 set -eu
 
-REPO="nccloud/hyperlift-cli"
+REPO="NCCloud/hyperlift-cli"
 BINARY="hyperlift"
 INSTALL_DIR="${HYPERLIFT_INSTALL:-/usr/local/bin}"
 

@@ -45,3 +45,15 @@ func isNewer(current, latest string) bool {
 
 	return semver.Compare(current, latest) < 0
 }
+
+// majorBehind reports whether latest is at least one major version ahead of
+// current. A dev or invalid current version never counts: it gets the normal
+// notice, not the warning.
+func majorBehind(current, latest string) bool {
+	current, latest = canonicalV(current), canonicalV(latest)
+	if !semver.IsValid(current) || !semver.IsValid(latest) {
+		return false
+	}
+
+	return semver.Compare(semver.Major(current), semver.Major(latest)) < 0
+}

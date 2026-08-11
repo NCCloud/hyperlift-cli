@@ -31,7 +31,7 @@ Every command carries its own reference: run `hyperlift <command> --help`.
 ### Install script (Linux & macOS)
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/nccloud/hyperlift-cli/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/NCCloud/hyperlift-cli/main/scripts/install.sh | sh
 ```
 
 The script detects your OS/architecture, downloads the matching release archive,
@@ -41,13 +41,13 @@ with `HYPERLIFT_VERSION`:
 
 ```sh
 HYPERLIFT_VERSION=v1.2.3 HYPERLIFT_INSTALL="$HOME/.local/bin" \
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/nccloud/hyperlift-cli/main/scripts/install.sh)"
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/NCCloud/hyperlift-cli/main/scripts/install.sh)"
 ```
 
 ### Windows
 
 Download `hyperlift_windows_amd64.zip` from the
-[Releases page](https://github.com/nccloud/hyperlift-cli/releases), extract it,
+[Releases page](https://github.com/NCCloud/hyperlift-cli/releases), extract it,
 and put `hyperlift.exe` in a folder on your `PATH`.
 
 You only do this once. `hyperlift update` replaces the binary in place after
@@ -56,13 +56,13 @@ that.
 ### Manual download
 
 Take the archive for your platform from the
-[Releases page](https://github.com/nccloud/hyperlift-cli/releases), extract it,
+[Releases page](https://github.com/NCCloud/hyperlift-cli/releases), extract it,
 and move the `hyperlift` binary onto your `PATH`.
 
 ### From source
 
 ```sh
-git clone https://github.com/nccloud/hyperlift-cli
+git clone https://github.com/NCCloud/hyperlift-cli
 cd hyperlift-cli
 make install   # installs into $(go env GOPATH)/bin
 ```
@@ -89,7 +89,7 @@ needs [cosign](https://github.com/sigstore/cosign):
 ```sh
 cosign verify-blob \
   --bundle SHA256SUMS.sigstore.json \
-  --certificate-identity-regexp 'https://github.com/nccloud/hyperlift-cli/.github/workflows/release.yaml@.*' \
+  --certificate-identity-regexp 'https://github.com/NCCloud/hyperlift-cli/.github/workflows/release.yaml@.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   SHA256SUMS
 ```
