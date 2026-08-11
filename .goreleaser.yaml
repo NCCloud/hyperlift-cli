@@ -87,7 +87,7 @@ signs:
 
 release:
   github:
-    owner: nccloud
+    owner: NCCloud
     name: hyperlift-cli
   # The workflow triggers on an already-published release, so don't flip drafts.
   draft: false
