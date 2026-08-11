@@ -11,7 +11,6 @@ import (
 	"testing"
 )
 
-// writeFile writes a test fixture file.
 func writeFile(path string, b []byte) error {
 	return os.WriteFile(path, b, 0o755) //nolint:gosec // test fixture; exec bit is intentional
 }

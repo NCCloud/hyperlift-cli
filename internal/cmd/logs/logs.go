@@ -28,10 +28,8 @@ type logsAPI interface {
 // is a package variable so tests can shorten it.
 var followPollInterval = 3 * time.Second
 
-// followMaxBackoff caps the retry backoff for a transient error during --follow.
 const followMaxBackoff = 30 * time.Second
 
-// logsPageTake is the page size to request.
 const logsPageTake = 100
 
 // logsOptions holds the resolved inputs of one logs run.
@@ -171,7 +169,6 @@ func fatalLogsErr(err error) bool {
 	return false
 }
 
-// sleepCtx waits for d. It returns false if the context ends first.
 func sleepCtx(ctx context.Context, d time.Duration) bool {
 	select {
 	case <-ctx.Done():

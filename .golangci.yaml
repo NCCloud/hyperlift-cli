@@ -1,12 +1,7 @@
 version: "2"
 
-# House style follows gh / flyctl: a curated, high-signal linter set rather than
-# `default: all`. The all-linters mode pulls in opinionated, low-signal checks
-# (magic numbers, var-name length, mandated tag casing, line length on
-# documentation comments, named-return bans, enforced test parallelism, ...)
-# that conflict with the established layout (the config file uses snake_case
-# YAML, which is correct here). wsl_v5 is in deliberately: it auto-fixes the
-# blank-line rhythm, so `make fmt` keeps it without arguments.
+# A curated set, not `default: all`, whose
+# low-signal checks fight this codebase
 linters:
   default: standard
   enable:

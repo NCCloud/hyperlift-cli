@@ -185,7 +185,6 @@ main() {
   download "$sums_url" "${tmp}/SHA256SUMS" \
     || err "failed to download ${sums_url}"
 
-  # Optionally verify the checksum file's cosign signature before trusting it.
   verify_signature "$base" "$tmp"
 
   info "Verifying checksum..."

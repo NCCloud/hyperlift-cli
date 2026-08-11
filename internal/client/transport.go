@@ -128,7 +128,6 @@ func (t *authTransport) trace(r *http.Request, resp *http.Response, err error, d
 	}
 }
 
-// sleepCtx waits for d, or until ctx is cancelled.
 func sleepCtx(ctx context.Context, d time.Duration) error {
 	timer := time.NewTimer(d)
 	defer timer.Stop()

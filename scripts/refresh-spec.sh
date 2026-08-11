@@ -56,9 +56,8 @@ with open(sys.argv[2], "w") as out:
 print(f"paths: {len(spec['paths'])}, openapi {spec['openapi']}", file=sys.stderr)
 PY
 
-# Record the new provenance in the testdata README, so the pin and its
-# documentation cannot drift apart. Both lines are rewritten whole, so they must
-# stay on one line each in the README.
+# Rewrite the provenance in the testdata README. sed replaces whole lines, so
+# both entries must stay on one line each there.
 DOC="internal/testapi/testdata/README.md"
 sum="$(shasum -a 256 "$PIN" | awk '{print $1}')"
 today="$(date +%Y-%m-%d)"

@@ -52,7 +52,6 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - tar.gz
-    # Windows users get a .zip instead of a tarball.
     format_overrides:
       - goos: windows
         formats:

@@ -135,7 +135,6 @@ func (s *mockServer) route(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(rest, "/")
 	id := parts[0]
 
-	// The rate-limit sentinel always answers 429.
 	if id == rateLimitID {
 		s.rateLimited(w)
 		return

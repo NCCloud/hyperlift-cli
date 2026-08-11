@@ -186,11 +186,8 @@ func runLogin(ctx context.Context, f *cmdutil.Factory, opts *loginOptions) error
 	}
 }
 
-// classifyProbe maps the Probe error of a login:
-//   - nil           -> the credentials are good
-//   - 401           -> a hard failure, silent, with a message already worded
-//   - 403           -> valid credentials without a scope, so return a warning
-//   - anything else -> return the error unchanged
+// classifyProbe maps a login Probe error: a 401 is a hard, silent failure, a
+// 403 is valid credentials without a scope (a warning), the rest pass through.
 func classifyProbe(probeErr error) (warning string, err error) {
 	if probeErr == nil {
 		return "", nil

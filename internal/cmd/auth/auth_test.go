@@ -199,7 +199,6 @@ func TestLogin(t *testing.T) {
 				t.Errorf("output %q does not contain %q", combined, tc.errSubstr)
 			}
 
-			// Check what was stored.
 			cfg, _ := config.Load()
 			storedKey := cfg.APIKey()
 			storedSecret, _ := keyring.GetSecret()

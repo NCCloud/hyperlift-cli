@@ -24,10 +24,7 @@ const (
 
 // NewCmdRoot builds the root command and registers every subcommand.
 func NewCmdRoot(f *cmdutil.Factory) *cobra.Command {
-	// Run every persistent hook in the chain, not only the nearest one. The
-	// update nag hangs off the root's hooks; without this, the first subcommand
-	// that defines its own PersistentPreRun would silently disable the nag for
-	// its subtree.
+	// Keeps the root's update nag alive under child hooks.
 	cobra.EnableTraverseRunHooks = true
 
 	// The "new version available" notice is best effort and never delays the

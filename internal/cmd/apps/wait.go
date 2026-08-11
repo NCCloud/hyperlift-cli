@@ -32,7 +32,6 @@ const (
 // `running` from before the restart. This is the fast-path edge.
 const defaultGrace = 10 * time.Second
 
-// defaultInterval is the pause between polls.
 const defaultInterval = 2 * time.Second
 
 // waitOptions tunes how waitForOutcome polls.

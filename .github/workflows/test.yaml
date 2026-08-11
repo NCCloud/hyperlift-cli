@@ -33,9 +33,8 @@ jobs:
           go-version: '1.26.x'
           check-latest: true
 
-      # go build/test are OS-agnostic; the same commands run on Linux, macOS and
-      # Windows runners (the default shell differs per-OS but these need no shell
-      # features). -race requires cgo, which the runners provide by default.
+      # The same commands run on all three OSes. -race needs cgo, which the
+      # runners provide.
       - name: Build
         run: go build ./...
 

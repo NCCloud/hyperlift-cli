@@ -127,12 +127,9 @@ func runWhoami(ctx context.Context, f *cmdutil.Factory) error {
 	return nil
 }
 
-// classifyWhoami reads the Probe result for whoami:
-//   - nil           -> logged in
-//   - 403           -> logged in: the key authenticates, it only lacks a
-//     scope, which matches how login classifies a 403
-//   - anything else -> return the error unchanged; the caller gives a 401 the
-//     not-logged-in treatment every command shares
+// classifyWhoami reads the Probe result: nil and 403 both mean logged in (a
+// 403 only lacks a scope, matching login), the rest pass through to the shared
+// not-logged-in handling.
 func classifyWhoami(probeErr error) (loggedIn, scopeLimited bool, err error) {
 	if probeErr == nil {
 		return true, false, nil
