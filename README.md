@@ -6,7 +6,6 @@
 [![test](https://github.com/NCCloud/hyperlift-cli/actions/workflows/test.yaml/badge.svg)](https://github.com/NCCloud/hyperlift-cli/actions/workflows/test.yaml)
 [![lint](https://github.com/NCCloud/hyperlift-cli/actions/workflows/lint.yaml/badge.svg)](https://github.com/NCCloud/hyperlift-cli/actions/workflows/lint.yaml)
 [![release](https://img.shields.io/github/v/release/NCCloud/hyperlift-cli?sort=semver)](https://github.com/NCCloud/hyperlift-cli/releases/latest)
-[![Go Report Card](https://goreportcard.com/badge/github.com/nccloud/hyperlift-cli)](https://goreportcard.com/report/github.com/nccloud/hyperlift-cli)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Go](https://img.shields.io/github/go-mod/go-version/NCCloud/hyperlift-cli)](go.mod)
 
