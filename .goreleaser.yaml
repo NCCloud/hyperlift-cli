@@ -88,7 +88,6 @@ scoops:
     repository:
       owner: NCCloud
       name: scoop-bucket
-      # Same GH_PAT and constraint as the cask block above.
       token: "{{ .Env.GH_PAT }}"
     homepage: "https://github.com/NCCloud/hyperlift-cli"
     description: "Manage Hyperlift container applications from the command line"
