@@ -65,9 +65,7 @@ homebrew_casks:
     repository:
       owner: NCCloud
       name: homebrew-tap
-      # Writes the cask commit. `index` tolerates an unset GH_PAT, so a
-      # local snapshot still works.
-      token: '{{ index .Env "GH_PAT" }}'
+      token: "{{ .Env.GH_PAT }}"
     homepage: "https://github.com/NCCloud/hyperlift-cli"
     description: "Manage Hyperlift container applications from the command line"
     # Without GH_PAT the tap commit is skipped and the release still succeeds;
@@ -90,8 +88,8 @@ scoops:
     repository:
       owner: NCCloud
       name: scoop-bucket
-      # Same GH_PAT and reasoning as the cask block above.
-      token: '{{ index .Env "GH_PAT" }}'
+      # Same GH_PAT and constraint as the cask block above.
+      token: "{{ .Env.GH_PAT }}"
     homepage: "https://github.com/NCCloud/hyperlift-cli"
     description: "Manage Hyperlift container applications from the command line"
     license: "Apache-2.0"
