@@ -1,0 +1,3497 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Spaceship.com",
+    "contact": {
+      "email": "support@spaceship.com",
+      "url": "https://www.spaceship.com/about/contact-us/"
+    },
+    "description": "# Spaceship API\n\n## Authentication\n\nSpaceship API uses a combination of API key and API secret for authentication.\n\n### API key setup\nYou can generate your API key and secret in [API Manager](https://www.spaceship.com/application/api-manager/). Use the \"New API key\" button to set up a new API key and follow the guide to get started.\nAfter the key setup has been successful, it should appear on the API Manager application page.\n\n### API key usage\nAs shown in the example below, API consumers shall pass a valid API key and a corresponding API secret in the X-API-Secret headers.\nYou do not need to encode the API key and the API secret.\n```bash\ncurl -X GET '/api/resource' \\\n-H 'X-Api-Secret: F3brvQluT4s8aDB7PeFBH6qKHfH2xTKTneCjZbq3z2w7rj2vV6n_zhSvvJoQ' \\\n-H 'X-Api-Key: JdIS8QYFMZpVKupJtdc3'\n```\n\n## Asynchronous Operations\n\nSome API operations may take an extended period to complete. For these long-running operations, the API returns an HTTP 202 Accepted response with a `spaceship-async-operationid` header containing a unique operation identifier.\n\n### How Async Operations Work\n\n1. **Initiate Operation**: When you make a request that requires asynchronous processing (e.g., domain registration, transfer operations), the API immediately returns a 202 response.\n\n2. **Receive Operation ID**: The response includes the `spaceship-async-operationid` header with a unique identifier for tracking the operation.\n\n3. **Poll for Status**: Use the operation ID to poll the `/v1/async-operations/{operationId}` endpoint to check the current status of your operation.\n\n4. **Operation States**: Async operations can have the following statuses:\n   - `pending` - The operation is still in progress\n   - `success` - The operation completed successfully\n   - `failed` - The operation encountered an error and could not complete\n\n### Example Workflow\n\n```bash\n# Step 1: Initiate an async operation (e.g., domain registration)\ncurl -X POST '/api/v1/domains/example.com' \\\n-H 'X-Api-Secret: YOUR_SECRET' \\\n-H 'X-Api-Key: YOUR_KEY' \\\n-H 'Content-Type: application/json' \\\n-d '{\n  \"autoRenew\": false,\n  \"years\": 1,\n  \"privacyProtection\": {\n    \"level\": \"high\",\n    \"userConsent\": true\n  },\n  \"contacts\": {\n    \"registrant\": \"CONTACT_ID\",\n    \"admin\": \"CONTACT_ID\",\n    \"tech\": \"CONTACT_ID\",\n    \"billing\": \"CONTACT_ID\"\n  }\n}'\n\n# Response: 202 Accepted\n# Headers: spaceship-async-operationid: abc123xyz\n\n# Step 2: Check operation status\ncurl -X GET '/api/v1/async-operations/abc123xyz' \\\n-H 'X-Api-Secret: YOUR_SECRET' \\\n-H 'X-Api-Key: YOUR_KEY'\n\n# Response includes:\n# - status: \"pending\" | \"success\" | \"failed\"\n# - type: Operation type (e.g., \"domains_Create\")\n# - details: Additional information about the operation\n# - createdAt: Timestamp when operation was created\n# - modifiedAt: Timestamp of last status update\n```\n\n### Permissions \n\n - <b id=\"scopes/domains:read\">domains:read</b> - Read domain information and check configuration\n- <b id=\"scopes/domains:write\">domains:write</b> - Manage domains and domain settings\n- <b id=\"scopes/domains:transfer\">domains:transfer</b> - Transfer domains in and out\n- <b id=\"scopes/domains:billing\">domains:billing</b> - Manage domains billing operations\n- <b id=\"scopes/contacts:write\">contacts:write</b> - Save contact details\n- <b id=\"scopes/contacts:read\">contacts:read</b> - Read contact details\n- <b id=\"scopes/dnsrecords:write\">dnsrecords:write</b> - Write DNS resource records\n- <b id=\"scopes/dnsrecords:read\">dnsrecords:read</b> - Read DNS resource records\n- <b id=\"scopes/asyncoperations:read\">asyncoperations:read</b> - Read async operations details\n- <b id=\"scopes/sellerhub:read\">sellerhub:read</b> - Read SellerHub Domains\n- <b id=\"scopes/sellerhub:write\">sellerhub:write</b> - Write SellerHub Domains\n- <b id=\"scopes/hyperlift:read\">hyperlift:read</b> - Read Hyperlift applications\n- <b id=\"scopes/hyperlift:execute\">hyperlift:execute</b> - Build, restart, start and stop Hyperlift applications\n- <b id=\"scopes/hyperlift:manage\">hyperlift:manage</b> - Read and update Hyperlift application environment variables",
+    "version": "1.0.0",
+    "x-logo": {
+      "url": "https://spaceship-cdn.com/spaceship-api-doc-assets/logo.svg"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://spaceship.dev/api",
+      "description": "The main server for the Spaceship External API",
+      "variables": {}
+    }
+  ],
+  "security": [
+    {
+      "apiKey": [],
+      "apiSecret": []
+    }
+  ],
+  "paths": {
+    "/v1/hyperlift/applications": {
+      "get": {
+        "operationId": "getHyperliftApplicationList",
+        "summary": "Get Hyperlift application list",
+        "description": "Retrieves a paginated list of the Hyperlift applications owned by the authenticated user.\nResults are ordered by application id, so pages are stable across requests.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:read\">hyperlift:read</a>\n\n### Rate Limits \n\n * The limit for listing Hyperlift applications is 300 requests per user, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "take",
+            "in": "query",
+            "required": true,
+            "description": "Number of response items per page",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "explode": false
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": true,
+            "description": "Number of response items to skip",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "explode": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A paginated list of the caller's Hyperlift applications.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ExternalApplicationResponse"
+                      },
+                      "maxItems": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 100,
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "x-scopes": [
+          "hyperlift:read"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications?take=SOME_INTEGER_VALUE&skip=SOME_INTEGER_VALUE';\nconst options = {\n  method: 'GET',\n  headers: {'X-API-Key': 'REPLACE_KEY_VALUE', 'X-API-Secret': 'REPLACE_KEY_VALUE'}\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('GET', 'https://spaceship.dev/api/v1/hyperlift/applications?take=SOME_INTEGER_VALUE&skip=SOME_INTEGER_VALUE', [\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications?take=SOME_INTEGER_VALUE&skip=SOME_INTEGER_VALUE\"\n\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\"\n}\n\nresponse = requests.get(url, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request GET \\\n     --url 'https://spaceship.dev/api/v1/hyperlift/applications?take=SOME_INTEGER_VALUE&skip=SOME_INTEGER_VALUE' \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE'"
+          }
+        ]
+      }
+    },
+    "/v1/hyperlift/applications/{id}": {
+      "get": {
+        "operationId": "getHyperliftApplication",
+        "summary": "Get a Hyperlift application",
+        "description": "Retrieves detailed information about a specific Hyperlift application.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:read\">hyperlift:read</a>\n\n### Rate Limits \n\n * The limit for obtaining info for a Hyperlift application is 300 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hyperlift application retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "x-scopes": [
+          "hyperlift:read"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f';\nconst options = {\n  method: 'GET',\n  headers: {'X-API-Key': 'REPLACE_KEY_VALUE', 'X-API-Secret': 'REPLACE_KEY_VALUE'}\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('GET', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f', [\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f\"\n\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\"\n}\n\nresponse = requests.get(url, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request GET \\\n     --url https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE'"
+          }
+        ]
+      }
+    },
+    "/v1/hyperlift/applications/{id}/build": {
+      "post": {
+        "operationId": "buildHyperliftApplication",
+        "summary": "Build a Hyperlift application",
+        "description": "Triggers a new build for a Hyperlift application. The build runs in the background;\npoll `buildStatus` via *Get a Hyperlift application* to track its progress.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:execute\">hyperlift:execute</a>\n\n### Rate Limits \n\n * The limit for building a Hyperlift application is 10 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "x-scopes": [
+          "hyperlift:execute"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/build';\nconst options = {\n  method: 'POST',\n  headers: {'X-API-Key': 'REPLACE_KEY_VALUE', 'X-API-Secret': 'REPLACE_KEY_VALUE'}\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('POST', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/build', [\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/build\"\n\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\"\n}\n\nresponse = requests.post(url, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request POST \\\n     --url https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/build \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE'"
+          }
+        ]
+      }
+    },
+    "/v1/hyperlift/applications/{id}/build-logs": {
+      "get": {
+        "operationId": "getHyperliftApplicationBuildLogs",
+        "summary": "Get Hyperlift application build logs",
+        "description": "Retrieves a page of build log lines for a Hyperlift application. Pass the returned\n`cursor` back to fetch only the lines produced after the previous page; repeat to\nfollow the log. `finished: true` signals that the build has completed.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:read\">hyperlift:read</a>\n\n### Rate Limits \n\n * The limit for reading Hyperlift application build logs is 300 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of log lines to return per page (default 100).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "explode": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Resume cursor from a previous response; returns only lines produced after it.",
+            "schema": {
+              "type": "string",
+              "example": "665f20b3a1b2c3d4e5f60718",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "description": "Opaque resume cursor issued by the runtime and build log endpoints. Pass it back unchanged."
+            },
+            "explode": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of Hyperlift application build logs retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationLogsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "x-scopes": [
+          "hyperlift:read"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/build-logs?take=SOME_INTEGER_VALUE&cursor=665f20b3a1b2c3d4e5f60718';\nconst options = {\n  method: 'GET',\n  headers: {'X-API-Key': 'REPLACE_KEY_VALUE', 'X-API-Secret': 'REPLACE_KEY_VALUE'}\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('GET', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/build-logs?take=SOME_INTEGER_VALUE&cursor=665f20b3a1b2c3d4e5f60718', [\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/build-logs?take=SOME_INTEGER_VALUE&cursor=665f20b3a1b2c3d4e5f60718\"\n\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\"\n}\n\nresponse = requests.get(url, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request GET \\\n     --url 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/build-logs?take=SOME_INTEGER_VALUE&cursor=665f20b3a1b2c3d4e5f60718' \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE'"
+          }
+        ]
+      }
+    },
+    "/v1/hyperlift/applications/{id}/environment": {
+      "get": {
+        "operationId": "getHyperliftApplicationEnvironment",
+        "summary": "Get Hyperlift application environment variables",
+        "description": "Retrieves the environment variables configured for a Hyperlift application.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:manage\">hyperlift:manage</a>\n\n### Rate Limits \n\n * The limit for reading Hyperlift application environment variables is 300 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hyperlift application environment variables retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentVariablesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "x-scopes": [
+          "hyperlift:manage"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/environment';\nconst options = {\n  method: 'GET',\n  headers: {'X-API-Key': 'REPLACE_KEY_VALUE', 'X-API-Secret': 'REPLACE_KEY_VALUE'}\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('GET', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/environment', [\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/environment\"\n\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\"\n}\n\nresponse = requests.get(url, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request GET \\\n     --url https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/environment \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE'"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "updateHyperliftApplicationEnvironment",
+        "summary": "Update Hyperlift application environment variables",
+        "description": "Replaces the environment variables configured for a Hyperlift application with the provided set.\nThis is a full replacement: variables omitted from the payload are removed.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:manage\">hyperlift:manage</a>\n\n### Rate Limits \n\n * The limit for updating Hyperlift application environment variables is 60 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvironmentVariables"
+              }
+            }
+          },
+          "description": "Environment variables payload"
+        },
+        "x-scopes": [
+          "hyperlift:manage"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/environment';\nconst options = {\n  method: 'PUT',\n  headers: {\n    'X-API-Key': 'REPLACE_KEY_VALUE',\n    'X-API-Secret': 'REPLACE_KEY_VALUE',\n    'content-type': 'application/json'\n  },\n  body: JSON.stringify({items: {property1: 'string', property2: 'string'}})\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('PUT', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/environment', [\n  'body' => '{\"items\":{\"property1\":\"string\",\"property2\":\"string\"}}',\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n    'content-type' => 'application/json',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/environment\"\n\npayload = { \"items\": {\n        \"property1\": \"string\",\n        \"property2\": \"string\"\n    } }\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\",\n    \"content-type\": \"application/json\"\n}\n\nresponse = requests.put(url, json=payload, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request PUT \\\n     --url https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/environment \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE' \\\n     --header 'content-type: application/json' \\\n     --data '\n{\n  \"items\": {\n    \"property1\": \"string\",\n    \"property2\": \"string\"\n  }\n}\n'"
+          }
+        ]
+      }
+    },
+    "/v1/hyperlift/applications/{id}/logs": {
+      "get": {
+        "operationId": "getHyperliftApplicationLogs",
+        "summary": "Get Hyperlift application logs",
+        "description": "Retrieves a page of runtime log lines for a Hyperlift application. Pass the returned\n`cursor` back to fetch only the lines produced after the previous page; repeat to\nfollow the log. `finished: true` signals that the application has stopped.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:read\">hyperlift:read</a>\n\n### Rate Limits \n\n * The limit for reading Hyperlift application logs is 300 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of log lines to return per page (default 100).",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "explode": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Resume cursor from a previous response; returns only lines produced after it.",
+            "schema": {
+              "type": "string",
+              "example": "665f20b3a1b2c3d4e5f60718",
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "description": "Opaque resume cursor issued by the runtime and build log endpoints. Pass it back unchanged."
+            },
+            "explode": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of Hyperlift application logs retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationLogsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "x-scopes": [
+          "hyperlift:read"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/logs?take=SOME_INTEGER_VALUE&cursor=665f20b3a1b2c3d4e5f60718';\nconst options = {\n  method: 'GET',\n  headers: {'X-API-Key': 'REPLACE_KEY_VALUE', 'X-API-Secret': 'REPLACE_KEY_VALUE'}\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('GET', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/logs?take=SOME_INTEGER_VALUE&cursor=665f20b3a1b2c3d4e5f60718', [\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/logs?take=SOME_INTEGER_VALUE&cursor=665f20b3a1b2c3d4e5f60718\"\n\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\"\n}\n\nresponse = requests.get(url, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request GET \\\n     --url 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/logs?take=SOME_INTEGER_VALUE&cursor=665f20b3a1b2c3d4e5f60718' \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE'"
+          }
+        ]
+      }
+    },
+    "/v1/hyperlift/applications/{id}/metrics": {
+      "get": {
+        "operationId": "getHyperliftApplicationMetrics",
+        "summary": "Get Hyperlift application metrics",
+        "description": "Retrieves time-series resource metrics and quotas for a Hyperlift application.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:read\">hyperlift:read</a>\n\n### Rate Limits \n\n * The limit for obtaining Hyperlift application metrics is 120 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          },
+          {
+            "$ref": "#/components/parameters/GetApplicationMetricsQueryParams.startDate"
+          },
+          {
+            "$ref": "#/components/parameters/GetApplicationMetricsQueryParams.endDate"
+          },
+          {
+            "$ref": "#/components/parameters/GetApplicationMetricsQueryParams.interval"
+          },
+          {
+            "$ref": "#/components/parameters/GetApplicationMetricsQueryParams.metrics"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hyperlift application metrics retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationMetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "x-scopes": [
+          "hyperlift:read"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/metrics?startDate=2100-01-01T00%3A00%3A00.000Z&endDate=2100-01-01T00%3A00%3A00.000Z&interval=SOME_STRING_VALUE&metrics=SOME_STRING_VALUE';\nconst options = {\n  method: 'GET',\n  headers: {'X-API-Key': 'REPLACE_KEY_VALUE', 'X-API-Secret': 'REPLACE_KEY_VALUE'}\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('GET', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/metrics?startDate=2100-01-01T00%3A00%3A00.000Z&endDate=2100-01-01T00%3A00%3A00.000Z&interval=SOME_STRING_VALUE&metrics=SOME_STRING_VALUE', [\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/metrics?startDate=2100-01-01T00%3A00%3A00.000Z&endDate=2100-01-01T00%3A00%3A00.000Z&interval=SOME_STRING_VALUE&metrics=SOME_STRING_VALUE\"\n\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\"\n}\n\nresponse = requests.get(url, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request GET \\\n     --url 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/metrics?startDate=2100-01-01T00%3A00%3A00.000Z&endDate=2100-01-01T00%3A00%3A00.000Z&interval=SOME_STRING_VALUE&metrics=SOME_STRING_VALUE' \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE'"
+          }
+        ]
+      }
+    },
+    "/v1/hyperlift/applications/{id}/restart": {
+      "post": {
+        "operationId": "restartHyperliftApplication",
+        "summary": "Restart a Hyperlift application",
+        "description": "Restarts a running Hyperlift application.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:execute\">hyperlift:execute</a>\n\n### Rate Limits \n\n * The limit for restarting a Hyperlift application is 10 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "x-scopes": [
+          "hyperlift:execute"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/restart';\nconst options = {\n  method: 'POST',\n  headers: {'X-API-Key': 'REPLACE_KEY_VALUE', 'X-API-Secret': 'REPLACE_KEY_VALUE'}\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('POST', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/restart', [\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/restart\"\n\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\"\n}\n\nresponse = requests.post(url, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request POST \\\n     --url https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/restart \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE'"
+          }
+        ]
+      }
+    },
+    "/v1/hyperlift/applications/{id}/scale": {
+      "put": {
+        "operationId": "scaleHyperliftApplication",
+        "summary": "Scale a Hyperlift application",
+        "description": "Sets the desired scale of a Hyperlift application. A scale of `0` stops the application,\na scale of `1` starts (runs) it.\n\n### Required Permissions \n\n - <a href=\"#scopes/hyperlift:execute\">hyperlift:execute</a>\n\n### Rate Limits \n\n * The limit for scaling a Hyperlift application is 10 requests per application, within 300 seconds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Application identifier",
+            "schema": {
+              "type": "string",
+              "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "description": "Unique identifier of a Hyperlift application."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The user's request was not authorized properly.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user's request not allowed to perform this action with the current scopes.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested object was not found.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectNotFoundError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The entity is unprocessable.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The response indicates that the rate limit for the API has been exceeded. It includes details about the rate limit, like the number of requests left and the time the rate limit window resets.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "required": true,
+                "description": "Request limit per the allotted time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "required": true,
+                "description": "The number of requests left for the time window",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "X-RateLimit-Reset": {
+                "required": true,
+                "description": "The UTC date/time when the current rate limit window resets",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "Retry-After": {
+                "required": true,
+                "description": "The number of seconds inndicating how long the client ought to wait before making a follow-up request",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The infrastructure encountered an error.",
+            "headers": {
+              "spaceship-error-code": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/errorCode"
+                }
+              },
+              "spaceship-operation-id": {
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/operationId"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnexpectedError"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Hyperlift"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScaleApplicationRequest"
+              }
+            }
+          },
+          "description": "Scale request payload"
+        },
+        "x-scopes": [
+          "hyperlift:execute"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "javascript",
+            "source": "const url = 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/scale';\nconst options = {\n  method: 'PUT',\n  headers: {\n    'X-API-Key': 'REPLACE_KEY_VALUE',\n    'X-API-Secret': 'REPLACE_KEY_VALUE',\n    'content-type': 'application/json'\n  },\n  body: JSON.stringify({scale: 1})\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error(err));"
+          },
+          {
+            "lang": "php",
+            "source": "<?php\nrequire_once('vendor/autoload.php');\n\n$client = new \\GuzzleHttp\\Client();\n\n$response = $client->request('PUT', 'https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/scale', [\n  'body' => '{\"scale\":1}',\n  'headers' => [\n    'X-API-Key' => 'REPLACE_KEY_VALUE',\n    'X-API-Secret' => 'REPLACE_KEY_VALUE',\n    'content-type' => 'application/json',\n  ],\n]);\n\necho $response->getBody();"
+          },
+          {
+            "lang": "python",
+            "source": "import requests\n\nurl = \"https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/scale\"\n\npayload = { \"scale\": 1 }\nheaders = {\n    \"X-API-Key\": \"REPLACE_KEY_VALUE\",\n    \"X-API-Secret\": \"REPLACE_KEY_VALUE\",\n    \"content-type\": \"application/json\"\n}\n\nresponse = requests.put(url, json=payload, headers=headers)\n\nprint(response.text)"
+          },
+          {
+            "lang": "shell",
+            "source": "curl --request PUT \\\n     --url https://spaceship.dev/api/v1/hyperlift/applications/3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f/scale \\\n     --header 'X-API-Key: REPLACE_KEY_VALUE' \\\n     --header 'X-API-Secret: REPLACE_KEY_VALUE' \\\n     --header 'content-type: application/json' \\\n     --data '{\"scale\":1}'"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "GetApplicationMetricsQueryParams.endDate": {
+        "name": "endDate",
+        "in": "query",
+        "required": true,
+        "description": "Inclusive upper bound of the time range as a full ISO-8601 UTC datetime (e.g., `2026-01-16T00:00:00.000Z`).",
+        "schema": {
+          "type": "string",
+          "example": "2100-01-01T00:00:00.000Z",
+          "maxLength": 27,
+          "format": "date-time",
+          "description": "ISO-8601 DateTime"
+        },
+        "explode": false
+      },
+      "GetApplicationMetricsQueryParams.interval": {
+        "name": "interval",
+        "in": "query",
+        "required": true,
+        "description": "Sampling interval that sets the metric bucket size: a number followed by a unit (`s`, `m`, `h` or `d`), for example `10m` or `1h`. A request may span at most 1,500 intervals (e.g. a day at `5m`, or a month at `1h`).",
+        "schema": {
+          "type": "string",
+          "pattern": "^\\d+(s|m|h|d)$",
+          "maxLength": 16
+        },
+        "explode": false
+      },
+      "GetApplicationMetricsQueryParams.metrics": {
+        "name": "metrics",
+        "in": "query",
+        "required": true,
+        "description": "Comma-separated list of metrics to return. Allowed values: `memoryUsageBytes`, `cpuUsagePercentage`,\n`networkReceiveRateBytes`, `networkTransmitRateBytes`, `ephemeralStorageUsedMebibytes`,\n`persistentStorageUsedMebibytes`. More metrics may be added over time.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*(,[a-z][a-zA-Z0-9]*)*$",
+          "maxLength": 256
+        },
+        "explode": false
+      },
+      "GetApplicationMetricsQueryParams.startDate": {
+        "name": "startDate",
+        "in": "query",
+        "required": true,
+        "description": "Inclusive lower bound of the time range as a full ISO-8601 UTC datetime (e.g., `2026-01-15T00:00:00.000Z`).",
+        "schema": {
+          "type": "string",
+          "example": "2100-01-01T00:00:00.000Z",
+          "maxLength": 27,
+          "format": "date-time",
+          "description": "ISO-8601 DateTime"
+        },
+        "explode": false
+      }
+    },
+    "schemas": {
+      "ApplicationLogLine": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Server listening on port 3000",
+            "maxLength": 16384,
+            "pattern": "^[\\s\\S]*$",
+            "description": "The log line text."
+          },
+          "timestamp": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/isoDate"
+              }
+            ],
+            "example": "2026-01-15T12:00:00Z",
+            "description": "Time the line was produced, as an ISO-8601 UTC datetime (second precision). Absent when the source line carried no timestamp."
+          }
+        },
+        "description": "One log line of a Hyperlift application."
+      },
+      "ApplicationLogsResponse": {
+        "type": "object",
+        "required": [
+          "items",
+          "finished"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationLogLine"
+            },
+            "maxItems": 100,
+            "description": "Log lines, oldest first."
+          },
+          "cursor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/applicationLogsCursor"
+              }
+            ],
+            "description": "Resume cursor for the next page. Absent while the application has not produced any lines yet."
+          },
+          "finished": {
+            "type": "boolean",
+            "description": "True when the log stream has ended, so pollers can stop: for runtime logs this means the application stopped, for build logs that the build completed. A later start or build produces a new stream."
+          }
+        },
+        "description": "A bounded page of log lines, oldest first. Pass `cursor` back via the `cursor` query\nparameter to fetch only the lines produced after this page; repeat to follow the log."
+      },
+      "ApplicationMetricSample": {
+        "type": "object",
+        "required": [
+          "timestamp",
+          "value"
+        ],
+        "properties": {
+          "timestamp": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/isoDate"
+              }
+            ],
+            "example": "2026-01-15T00:00:00.000Z",
+            "description": "Timestamp of the sample as a full ISO-8601 UTC datetime, marking the start of its interval bucket."
+          },
+          "value": {
+            "type": "number",
+            "format": "double",
+            "example": 512,
+            "description": "Metric value averaged over the interval, in the series' `unit`."
+          }
+        },
+        "description": "A single metric sample: the value observed for one interval."
+      },
+      "ApplicationMetricSeries": {
+        "type": "object",
+        "required": [
+          "name",
+          "unit",
+          "samples"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "memoryUsageBytes",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-zA-Z0-9]*$",
+            "description": "Metric name, matching the value passed in the `metrics` query parameter."
+          },
+          "unit": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MetricUnit"
+              }
+            ],
+            "description": "Unit of the series' sample values and quota."
+          },
+          "quota": {
+            "type": "number",
+            "format": "double",
+            "example": 1024,
+            "description": "Plan-defined maximum for the metric, in the series' `unit`; present only where one applies (memory and the storage metrics)."
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationMetricSample"
+            },
+            "maxItems": 1500,
+            "description": "Ordered samples for the metric."
+          }
+        },
+        "description": "Time series for one requested metric."
+      },
+      "ApplicationMetricsResponse": {
+        "type": "object",
+        "required": [
+          "metrics"
+        ],
+        "properties": {
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationMetricSeries"
+            },
+            "maxItems": 20,
+            "description": "One series per requested metric, in request order."
+          }
+        },
+        "description": "Time-series resource metrics for a Hyperlift application."
+      },
+      "ApplicationMutationResponse": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/applicationId"
+              }
+            ],
+            "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+            "description": "Unique identifier of the affected application."
+          }
+        },
+        "description": "Result of a Hyperlift application mutation, carrying the identifier of the affected application."
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "enum": [
+          "creating",
+          "instart",
+          "running",
+          "instop",
+          "stopped",
+          "deleting",
+          "failure",
+          "restarting",
+          "created",
+          "deploying",
+          "resetting"
+        ],
+        "description": "Current lifecycle status of a Hyperlift application. This set may gain values over time."
+      },
+      "BuildStatus": {
+        "type": "string",
+        "enum": [
+          "building",
+          "failed",
+          "built",
+          "none"
+        ],
+        "description": "Current build status of a Hyperlift application. This set may gain values over time."
+      },
+      "EnvironmentVariableItems": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/environmentVariableValue"
+        },
+        "description": "Map of environment variable names to their values. At most 20 variables per application.\nA name may contain ASCII letters, digits, underscores, dashes and spaces, must not start\nwith a digit, and is limited to 128 characters; other names are rejected. Names are\nnormalized on write: upper-cased, with dashes and spaces becoming underscores (`db-user`\nis stored and returned as `DB_USER`).\n`APPLICATION_PORT` (default `8080`) is the port Hyperlift connects to the application on;\nset it to an empty value to not expose the application.",
+        "maxProperties": 20
+      },
+      "EnvironmentVariables": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentVariableItems"
+              }
+            ],
+            "description": "Map of environment variable names to their values,\nfor example `{ \"NODE_ENV\": \"production\", \"APPLICATION_PORT\": \"8080\" }`. At most 20 variables;\nnames are normalized on write (upper-cased, dashes and spaces become underscores)."
+          }
+        },
+        "description": "Environment variables for a Hyperlift application, expressed as a map of variable name to value\nunder the `items` property."
+      },
+      "EnvironmentVariablesResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "items"
+        ],
+        "properties": {
+          "id": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/applicationId"
+              }
+            ],
+            "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+            "description": "Unique identifier of the application."
+          },
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentVariableItems"
+              }
+            ],
+            "description": "Map of environment variable names to their values,\nfor example `{ \"NODE_ENV\": \"production\", \"APPLICATION_PORT\": \"8080\" }`. At most 20 variables;\nnames are normalized on write (upper-cased, dashes and spaces become underscores)."
+          }
+        },
+        "description": "Environment variables for a Hyperlift application together with the application identifier."
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "pattern": "^[\\s|\\S]*$",
+            "description": "A general message about the exception",
+            "readOnly": true
+          }
+        }
+      },
+      "ExternalApplicationResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "buildStatus",
+          "plan",
+          "domain",
+          "scale",
+          "branch",
+          "githubInstallationId",
+          "githubRepositoryFullName",
+          "dockerfilePath",
+          "automaticBuildEnabled",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/applicationId"
+              }
+            ],
+            "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+            "description": "Unique identifier of the application."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ],
+            "description": "Current lifecycle status of the application."
+          },
+          "buildStatus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuildStatus"
+              }
+            ],
+            "description": "Current build status of the application."
+          },
+          "plan": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/applicationPlan"
+              }
+            ],
+            "description": "Identifier of the plan the application runs on."
+          },
+          "domain": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/applicationDomain"
+              }
+            ],
+            "nullable": true,
+            "description": "Custom domain bound to the application, if any."
+          },
+          "scale": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "example": 1,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Desired scale of the application: 0 when stopped, 1 when running. Null while the desired scale is not yet known (e.g. during initial provisioning)."
+          },
+          "branch": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/gitBranch"
+              }
+            ],
+            "nullable": true,
+            "description": "Source branch deployed for the application."
+          },
+          "githubInstallationId": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/githubInstallationId"
+              }
+            ],
+            "nullable": true,
+            "description": "Identifier of the connected GitHub App installation."
+          },
+          "githubRepositoryFullName": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/githubRepositoryFullName"
+              }
+            ],
+            "nullable": true,
+            "description": "Full name (owner/repository) of the connected GitHub repository."
+          },
+          "dockerfilePath": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/dockerfilePath"
+              }
+            ],
+            "nullable": true,
+            "description": "Path to the Dockerfile used to build the application."
+          },
+          "automaticBuildEnabled": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether a new build is triggered automatically on each push to the connected branch."
+          },
+          "createdAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/isoDate"
+              }
+            ],
+            "description": "Timestamp when the application was created."
+          },
+          "updatedAt": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/isoDate"
+              }
+            ],
+            "nullable": true,
+            "description": "Timestamp when the application was last updated."
+          }
+        },
+        "description": "A Hyperlift application as exposed through the external API, with its deployment, build and source configuration."
+      },
+      "ForbiddenError": {
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "pattern": "^[\\s|\\S]*$",
+            "description": "A general message about the exception",
+            "readOnly": true
+          }
+        }
+      },
+      "MetricUnit": {
+        "type": "string",
+        "enum": [
+          "bytes",
+          "percent",
+          "bytesPerSecond",
+          "mebibytes"
+        ],
+        "description": "Unit a metric's sample values and quota are expressed in. This set may gain values over time."
+      },
+      "ObjectNotFoundError": {
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "pattern": "^[\\s|\\S]*$",
+            "description": "A general message about the exception",
+            "readOnly": true
+          }
+        }
+      },
+      "RateLimitError": {
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "pattern": "^[\\s|\\S]*$",
+            "description": "A general message about the exception",
+            "readOnly": true
+          }
+        }
+      },
+      "ScaleApplicationRequest": {
+        "type": "object",
+        "required": [
+          "scale"
+        ],
+        "properties": {
+          "scale": {
+            "type": "integer",
+            "format": "int32",
+            "example": 1,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Desired scale: 0 stops the application, 1 starts (runs) it."
+          }
+        },
+        "description": "Request to change the scale of a Hyperlift application."
+      },
+      "UnauthorizedError": {
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "pattern": "^[\\s|\\S]*$",
+            "description": "A general message about the exception",
+            "readOnly": true
+          }
+        }
+      },
+      "UnexpectedError": {
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "pattern": "^[\\s|\\S]*$",
+            "description": "A general message about the exception",
+            "readOnly": true
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": [
+          "detail",
+          "data"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "pattern": "^[\\s|\\S]*$",
+            "description": "A general message about the exception",
+            "readOnly": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "example": "name",
+                  "pattern": "^[\\s|\\S]*$",
+                  "description": "The path to the field that caused the validation error",
+                  "readOnly": true
+                },
+                "details": {
+                  "type": "string",
+                  "example": "The domain name contains invalid characters",
+                  "pattern": "^[\\s|\\S]*$",
+                  "description": "A specific message about what is wrong with the field",
+                  "readOnly": true
+                }
+              },
+              "required": [
+                "field",
+                "details"
+              ]
+            },
+            "description": "A detailed list of validation errors",
+            "readOnly": true
+          }
+        }
+      },
+      "applicationDomain": {
+        "type": "string",
+        "example": "app.example.com",
+        "maxLength": 253,
+        "format": "domain",
+        "description": "Custom domain bound to a Hyperlift application."
+      },
+      "applicationId": {
+        "type": "string",
+        "example": "3f8b9a2e-5c41-4d6a-9f0e-7b2c8d1a4e5f",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[a-zA-Z0-9_-]+$",
+        "description": "Unique identifier of a Hyperlift application."
+      },
+      "applicationLogsCursor": {
+        "type": "string",
+        "example": "665f20b3a1b2c3d4e5f60718",
+        "maxLength": 64,
+        "pattern": "^[A-Za-z0-9_-]{1,64}$",
+        "description": "Opaque resume cursor issued by the runtime and build log endpoints. Pass it back unchanged."
+      },
+      "applicationPlan": {
+        "type": "string",
+        "example": "hyperlift_micro",
+        "maxLength": 64,
+        "pattern": "^[a-zA-Z0-9_-]+$",
+        "description": "Identifier of the plan a Hyperlift application runs on, e.g. `hyperlift_micro`,\n`hyperlift_small`, `hyperlift_medium`, `hyperlift_large`, `hyperlift_extra_large`."
+      },
+      "dockerfilePath": {
+        "type": "string",
+        "example": "./Dockerfile",
+        "maxLength": 1024,
+        "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+        "description": "Path to the Dockerfile used to build a Hyperlift application."
+      },
+      "environmentVariableValue": {
+        "type": "string",
+        "maxLength": 16384,
+        "pattern": "^[\\s\\S]*$",
+        "description": "Value of a single Hyperlift environment variable."
+      },
+      "errorCode": {
+        "type": "string",
+        "maxLength": 255,
+        "pattern": "^(business|application|infrastructure)(\\.[a-zA-Z]+)+$",
+        "description": "The dot-separated error code indicating the type of the problem occurred"
+      },
+      "gitBranch": {
+        "type": "string",
+        "example": "main",
+        "maxLength": 255,
+        "pattern": "^[^\\x00-\\x20~^:?*\\[\\\\\\x7f]+$",
+        "description": "Source branch deployed for a Hyperlift application."
+      },
+      "githubInstallationId": {
+        "type": "integer",
+        "format": "int32",
+        "example": 12345678,
+        "minimum": 0,
+        "maximum": 2147483647,
+        "description": "Identifier of a connected GitHub App installation."
+      },
+      "githubRepositoryFullName": {
+        "type": "string",
+        "example": "acme/web-app",
+        "maxLength": 512,
+        "pattern": "^[^/\\s]+/[^/\\s]+$",
+        "description": "Full name (owner/repository) of a connected GitHub repository."
+      },
+      "isoDate": {
+        "type": "string",
+        "example": "2100-01-01T00:00:00.000Z",
+        "maxLength": 27,
+        "format": "date-time",
+        "description": "ISO-8601 DateTime"
+      },
+      "operationId": {
+        "type": "string",
+        "maxLength": 16,
+        "pattern": "^[a-z0-9]{16}$",
+        "description": "16-characters unique identifier of the operation"
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for authenticating requests, with a set of scopes (permissions) defined by the user at the time of creation."
+      },
+      "apiSecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Secret",
+        "description": "API secret for authenticating requests must be set together with the API key."
+      }
+    }
+  }
+}

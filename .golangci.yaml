@@ -1,0 +1,34 @@
+version: "2"
+
+# A curated set, not `default: all`, whose
+# low-signal checks fight this codebase
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errchkjson
+    - gocritic
+    - gosec
+    - misspell
+    - noctx
+    - prealloc
+    - revive
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wsl_v5
+  settings:
+    revive:
+      rules:
+        - name: unused-parameter
+          disabled: true
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/nccloud/hyperlift-cli

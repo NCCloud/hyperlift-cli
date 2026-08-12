@@ -1,0 +1,15 @@
+{
+  "id": "app_a1b2c3",
+  "status": "creating",
+  "buildStatus": "none",
+  "plan": "hyperlift_micro",
+  "domain": null,
+  "scale": null,
+  "branch": null,
+  "githubInstallationId": null,
+  "githubRepositoryFullName": null,
+  "dockerfilePath": null,
+  "automaticBuildEnabled": null,
+  "createdAt": "2026-01-15T00:00:00.000Z",
+  "updatedAt": null
+}

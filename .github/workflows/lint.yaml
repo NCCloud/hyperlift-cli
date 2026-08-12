@@ -1,0 +1,116 @@
+name: lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  golangci-lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # go.mod holds the minimum. Build with the newest patch of that major
+          # instead: govulncheck reports standard-library advisories against the
+          # toolchain, and a stale patch fails it with nothing to fix in our code.
+          # check-latest overrides the runner's pre-installed Go.
+          go-version: '1.26.x'
+          check-latest: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.12.2
+
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # Newest 1.26 patch, not go.mod's minimum. See lint.yaml.
+          go-version: '1.26.x'
+          check-latest: true
+
+      - name: Run govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
+
+  # Re-extract the published spec and compare it against the pin, so a contract
+  # change upstream fails the PR instead of rotting silently. The README's
+  # Retrieved date changes on every run, so the diff targets the pin alone.
+  spec-drift:
+    name: spec drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Refresh the spec from the published docs
+        run: make refresh-spec
+
+      - name: Fail if the pin drifted
+        run: git diff --exit-code internal/testapi/testdata/spaceship-public-api.json
+
+  # The release workflow must never be GoReleaser's first run on the tree: this
+  # job builds the full matrix as a throwaway snapshot and asserts the asset
+  # names the self-updater and install.sh grep for.
+  goreleaser-snapshot:
+    name: goreleaser snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # Newest 1.26 patch, not go.mod's minimum. See lint.yaml.
+          go-version: '1.26.x'
+          check-latest: true
+
+      - name: GoReleaser check
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: "v2.17.1"
+          args: check
+
+      - name: GoReleaser snapshot
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: "v2.17.1"
+          args: release --snapshot --clean --skip=sign,publish
+
+      - name: Assert asset-name contract
+        run: |
+          set -eu
+          for f in \
+            dist/hyperlift_darwin_amd64.tar.gz \
+            dist/hyperlift_darwin_arm64.tar.gz \
+            dist/hyperlift_linux_amd64.tar.gz \
+            dist/hyperlift_linux_arm64.tar.gz \
+            dist/hyperlift_windows_amd64.zip \
+            dist/SHA256SUMS; do
+            test -f "$f" || { echo "missing release asset: $f"; exit 1; }
+          done
