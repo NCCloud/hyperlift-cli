@@ -33,7 +33,7 @@ test: ## Run the test suite (same flags as CI)
 	go test -race -cover ./...
 
 refresh-spec: ## Re-pin the contract oracle's OpenAPI document from the published docs
-	sh scripts/refresh-spec.sh
+	curl -fsSL https://docs.spaceship.dev/ | python3 scripts/refresh_spec.py
 
 fmt: ## Format the codebase
 	golangci-lint fmt

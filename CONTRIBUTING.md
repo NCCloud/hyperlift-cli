@@ -20,16 +20,16 @@ make lint       # golangci-lint run ./...
 
 The tests in `internal/testapi` validate the mock server against a pinned copy
 of the published Spaceship API OpenAPI document
-(`internal/testapi/testdata/spaceship-public-api.yaml`). When the upstream
+(`internal/testapi/testdata/spaceship-public-api.json`). When the upstream
 contract changes, refresh the pin:
 
 ```sh
 make refresh-spec   # re-extracts the spec from the published docs
 ```
 
-That rewrites the pin and its provenance (the `Retrieved` date and the
-checksum) in `internal/testapi/testdata/README.md`. Then confirm the contract
-tests stay green: `go test ./internal/testapi/`.
+That re-extracts the published document and pins its hyperlift subset
+(CI runs the same refresh on every PR and fails when the pin drifts). Then
+confirm the contract tests stay green: `go test ./internal/testapi/`.
 
 ## Running against the mock API
 

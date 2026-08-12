@@ -16,7 +16,7 @@ import (
 // specFile is a pinned copy of the published Spaceship External API OpenAPI
 // document; see testdata/README.md. It is this package's oracle, because the
 // mock must not be its own contract.
-const specFile = "testdata/spaceship-public-api.yaml"
+const specFile = "testdata/spaceship-public-api.json"
 
 // specPrefix is the namespace the mock stands in for. A spec path carries the
 // /v1 that the client's base URL supplies, so the mock serves it without /v1.

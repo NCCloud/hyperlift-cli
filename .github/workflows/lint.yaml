@@ -53,6 +53,24 @@ jobs:
       - name: Run govulncheck
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
+  # Re-extract the published spec and compare it against the pin, so a contract
+  # change upstream fails the PR instead of rotting silently. The README's
+  # Retrieved date changes on every run, so the diff targets the pin alone.
+  spec-drift:
+    name: spec drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Refresh the spec from the published docs
+        run: make refresh-spec
+
+      - name: Fail if the pin drifted
+        run: git diff --exit-code internal/testapi/testdata/spaceship-public-api.json
+
   # The release workflow must never be GoReleaser's first run on the tree: this
   # job builds the full matrix as a throwaway snapshot and asserts the asset
   # names the self-updater and install.sh grep for.
